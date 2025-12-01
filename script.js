@@ -1,5 +1,4 @@
 // script.js - self-correction version with "Download Results"
-
 let allWords = [];
 let selectedWords = [];
 let resultsForDownload = []; // will hold objects {word, studentAns, correctChinese}
