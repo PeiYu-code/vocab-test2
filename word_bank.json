@@ -1,4 +1,5 @@
-[
+{
+  "words":[
   {"word": "portray"},
   {"word": "dependent"},
   {"word": "critic"},
@@ -210,3 +211,4 @@
   {"word": "accomplish"},
   {"word": "accountant"}
 ]
+}
