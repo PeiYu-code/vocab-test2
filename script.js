@@ -12,7 +12,7 @@ async function loadWords() {
   allWords = data.words;
 }
 
-// Randomly pick up to 25 words (if fewer in JSON, pick all)
+// Randomly pick up to 25 words
 function pickRandom25(words) {
   const shuffled = [...words].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(25, shuffled.length));
@@ -31,16 +31,16 @@ document.getElementById("startBtn").addEventListener("click", async () => {
   }
 
   selectedWords = pickRandom25(allWords);
-  resultsForDownload = []; // reset
+  resultsForDownload = [];
 
   const testArea = document.getElementById("testArea");
   testArea.innerHTML = "";
 
-  selectedWords.forEach((word, i) => {
+  selectedWords.forEach((obj, i) => {
     const row = document.createElement("div");
     row.className = "word-row";
     row.innerHTML = `
-      <b>${i + 1}. ${word}</b>
+      <b>${i + 1}. ${obj.word}</b>
       <input type="text" id="answer-${i}" placeholder="輸入中文意思">
     `;
     testArea.appendChild(row);
@@ -54,18 +54,16 @@ document.getElementById("startBtn").addEventListener("click", async () => {
   document.getElementById("startBtn").disabled = false;
 });
 
-// On submit: fetch Google Translate meanings and display side-by-side for self-correction
+// On submit: fetch Google Translate meanings
 document.getElementById("submitBtn").addEventListener("click", async () => {
   const resultsDiv = document.getElementById("results");
   resultsDiv.innerHTML = "";
   document.getElementById("resultTitle").classList.remove("hidden");
 
-  // For each selected word, fetch translation and show
   for (let i = 0; i < selectedWords.length; i++) {
-    const word = selectedWords[i];
+    const word = selectedWords[i].word;
     const studentAns = document.getElementById(`answer-${i}`).value.trim();
 
-    // Build Google Translate unofficial endpoint
     const url =
       "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-TW&dt=t&q=" +
       encodeURIComponent(word);
@@ -75,7 +73,6 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
       const resp = await fetch(url);
       if (!resp.ok) throw new Error("Translate fetch failed");
       const data = await resp.json();
-      // data format: nested arrays - pick the primary translation
       if (Array.isArray(data) && data[0] && data[0][0] && data[0][0][0]) {
         correctChinese = data[0][0][0];
       } else {
@@ -85,14 +82,12 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
       console.error("Translation error for", word, e);
     }
 
-    // Save for download
     resultsForDownload.push({
-      word,
+      word: word,
       studentAns: studentAns || "（空白）",
       correctChinese
     });
 
-    // Render the row (self-check view)
     const row = document.createElement("div");
     row.innerHTML = `
       <p>
@@ -105,11 +100,10 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     resultsDiv.appendChild(row);
   }
 
-  // Show download button now results are ready
   document.getElementById("downloadBtn").classList.remove("hidden");
 });
 
-// Download results as plaintext .txt file
+// Download results as plaintext
 document.getElementById("downloadBtn").addEventListener("click", () => {
   if (!resultsForDownload.length) {
     alert("No results to download. Please run a test and press Show Correct Answers first.");
