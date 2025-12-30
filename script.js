@@ -1,35 +1,24 @@
-// script.js - self-correction version with "Download Results"
+// script.js - PRINT-TO-PDF version (Chinese safe)
 let allWords = [];
 let selectedWords = [];
-let resultsForDownload = []; // will hold objects {word, studentAns, correctChinese}
+let resultsForDownload = [];
 
-// Load words from JSON
+// Load words
 async function loadWords() {
   const response = await fetch("word_bank.json");
-  if (!response.ok) throw new Error("Failed to load word_bank.json");
   const data = await response.json();
-  if (!Array.isArray(data.words)) throw new Error("word_bank.json must contain {\"words\": [ ... ]}");
   allWords = data.words;
 }
 
-// Randomly pick up to 25 words
+// Pick up to 25 words
 function pickRandom25(words) {
   const shuffled = [...words].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(25, shuffled.length));
 }
 
-// Build test UI
+// Start test
 document.getElementById("startBtn").addEventListener("click", async () => {
-  try {
-    document.getElementById("startBtn").disabled = true;
-    await loadWords();
-  } catch (err) {
-    alert("Failed to load word_bank.json. Check repository and filenames.\nSee console for details.");
-    console.error(err);
-    document.getElementById("startBtn").disabled = false;
-    return;
-  }
-
+  await loadWords();
   selectedWords = pickRandom25(allWords);
   resultsForDownload = [];
 
@@ -49,12 +38,11 @@ document.getElementById("startBtn").addEventListener("click", async () => {
   testArea.classList.remove("hidden");
   document.getElementById("submitBtn").classList.remove("hidden");
   document.getElementById("downloadBtn").classList.add("hidden");
-  document.getElementById("resultTitle").classList.add("hidden");
   document.getElementById("results").innerHTML = "";
-  document.getElementById("startBtn").disabled = false;
+  document.getElementById("resultTitle").classList.add("hidden");
 });
 
-// On submit: fetch Google Translate meanings
+// Show correct answers
 document.getElementById("submitBtn").addEventListener("click", async () => {
   const resultsDiv = document.getElementById("results");
   resultsDiv.innerHTML = "";
@@ -64,26 +52,21 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     const word = selectedWords[i].word;
     const studentAns = document.getElementById(`answer-${i}`).value.trim();
 
-    const url =
-      "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-TW&dt=t&q=" +
-      encodeURIComponent(word);
-
     let correctChinese = "（翻譯失敗）";
+
     try {
+      const url =
+        "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-TW&dt=t&q=" +
+        encodeURIComponent(word);
       const resp = await fetch(url);
-      if (!resp.ok) throw new Error("Translate fetch failed");
       const data = await resp.json();
-      if (Array.isArray(data) && data[0] && data[0][0] && data[0][0][0]) {
+      if (data && data[0] && data[0][0] && data[0][0][0]) {
         correctChinese = data[0][0][0];
-      } else {
-        correctChinese = "（無結果）";
       }
-    } catch (e) {
-      console.error("Translation error for", word, e);
-    }
+    } catch (e) {}
 
     resultsForDownload.push({
-      word: word,
+      word,
       studentAns: studentAns || "（空白）",
       correctChinese
     });
@@ -103,25 +86,46 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
   document.getElementById("downloadBtn").classList.remove("hidden");
 });
 
-// Download results as plaintext
+// Download PDF via browser print (Chinese-safe)
 document.getElementById("downloadBtn").addEventListener("click", () => {
-  if (!resultsForDownload.length) {
-    alert("No results to download. Please run a test and press Show Correct Answers first.");
-    return;
-  }
+  const win = window.open("", "_blank");
 
-  let text = `Vocabulary Test Results\nGenerated: ${new Date().toLocaleString()}\n\n`;
-  resultsForDownload.forEach((r, idx) => {
-    text += `${idx + 1}. ${r.word}\nYour answer: ${r.studentAns}\nReference (Google): ${r.correctChinese}\n\n`;
+  let html = `
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Vocabulary Test Results</title>
+      <style>
+        body { font-family: serif; padding: 30px; }
+        h1 { text-align: center; }
+        p { margin: 12px 0; }
+        hr { border: none; border-top: 1px solid #ccc; }
+      </style>
+    </head>
+    <body>
+      <h1>Vocabulary Test Results</h1>
+      <p>Generated: ${new Date().toLocaleString()}</p>
+      <hr>
+  `;
+
+  resultsForDownload.forEach((r, i) => {
+    html += `
+      <p>
+        <b>${i + 1}. ${r.word}</b><br>
+        你的答案：${r.studentAns}<br>
+        參考中文：${r.correctChinese}
+      </p>
+      <hr>
+    `;
   });
 
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "vocab_results.txt";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  html += `
+    </body>
+    </html>
+  `;
+
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  win.print();
 });
