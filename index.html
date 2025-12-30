@@ -1,24 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
   <title>Vocabulary Test</title>
-  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 20px;          /* ⭐ 整體字體放大 */
+      line-height: 1.6;
+      padding: 30px;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 8px 16px;
+      margin: 10px 5px 20px 0;
+      cursor: pointer;
+    }
+
+    input[type="text"] {
+      font-size: 18px;          /* ⭐ 輸入框字體放大 */
+      padding: 6px 8px;
+      margin-top: 6px;
+      width: 300px;
+    }
+
+    .word-row {
+      margin-bottom: 20px;      /* ⭐ 題目間距加大 */
+    }
+
+    #results p {
+      margin: 14px 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #ccc;
+      margin: 16px 0;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
+
 <body>
+
   <h1>Vocabulary Test</h1>
 
-  <div id="controls">
-    <button id="startBtn">Start Test</button>
-    <button id="submitBtn" class="hidden">Show Correct Answers</button>
-    <button id="downloadBtn" class="hidden">Download Results</button>
-  </div>
+  <button id="startBtn">Start Test</button>
+  <button id="submitBtn" class="hidden">Show Correct Answers</button>
+  <button id="downloadBtn" class="hidden">Download Results (PDF)</button>
 
   <div id="testArea" class="hidden"></div>
 
-  <h2 id="resultTitle" class="hidden">Correct Answers (参考中文)</h2>
+  <h2 id="resultTitle" class="hidden">Test Results</h2>
   <div id="results"></div>
 
   <script src="script.js"></script>
+
 </body>
 </html>
