@@ -1,24 +1,47 @@
 // script.js - PRINT-TO-PDF version (Chinese safe)
+
 let allWords = [];
 let selectedWords = [];
 let resultsForDownload = [];
 
-// Load words
+/* =========================
+   Load words safely
+========================= */
 async function loadWords() {
   const response = await fetch("word_bank.json");
+  if (!response.ok) {
+    throw new Error("Cannot load word_bank.json");
+  }
+
   const data = await response.json();
+
+  if (!data.words || !Array.isArray(data.words)) {
+    throw new Error("word_bank.json format error");
+  }
+
   allWords = data.words;
 }
 
-// Pick up to 25 words
+/* =========================
+   Pick up to 25 words
+========================= */
 function pickRandom25(words) {
   const shuffled = [...words].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(25, shuffled.length));
 }
 
-// Start test
+/* =========================
+   Start test
+========================= */
 document.getElementById("startBtn").addEventListener("click", async () => {
-  await loadWords();
+  try {
+    await loadWords();
+  } catch (err) {
+    alert("word_bank.json 讀取失敗，請檢查 JSON 是否有漏逗號。");
+    console.error(err);
+    return;
+  }
+
   selectedWords = pickRandom25(allWords);
   resultsForDownload = [];
 
@@ -42,7 +65,9 @@ document.getElementById("startBtn").addEventListener("click", async () => {
   document.getElementById("resultTitle").classList.add("hidden");
 });
 
-// Show correct answers
+/* =========================
+   Show correct answers
+========================= */
 document.getElementById("submitBtn").addEventListener("click", async () => {
   const resultsDiv = document.getElementById("results");
   resultsDiv.innerHTML = "";
@@ -50,7 +75,8 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
 
   for (let i = 0; i < selectedWords.length; i++) {
     const word = selectedWords[i].word;
-    const studentAns = document.getElementById(`answer-${i}`).value.trim();
+    const studentAns =
+      document.getElementById(`answer-${i}`).value.trim() || "（空白）";
 
     let correctChinese = "（翻譯失敗）";
 
@@ -58,16 +84,20 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
       const url =
         "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-TW&dt=t&q=" +
         encodeURIComponent(word);
+
       const resp = await fetch(url);
       const data = await resp.json();
-      if (data && data[0] && data[0][0] && data[0][0][0]) {
+
+      if (data?.[0]?.[0]?.[0]) {
         correctChinese = data[0][0][0];
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error("Translation failed:", word, e);
+    }
 
     resultsForDownload.push({
       word,
-      studentAns: studentAns || "（空白）",
+      studentAns,
       correctChinese
     });
 
@@ -75,7 +105,7 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     row.innerHTML = `
       <p>
         <b>${word}</b><br>
-        ➜ 你的答案：<span style="color:blue">${studentAns || "（空白）"}</span><br>
+        ➜ 你的答案：<span style="color:blue">${studentAns}</span><br>
         ➜ 參考中文：<span style="color:green">${correctChinese}</span>
       </p>
       <hr>
@@ -86,7 +116,9 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
   document.getElementById("downloadBtn").classList.remove("hidden");
 });
 
-// Download PDF via browser print (Chinese-safe)
+/* =========================
+   Download PDF (print)
+========================= */
 document.getElementById("downloadBtn").addEventListener("click", () => {
   const win = window.open("", "_blank");
 
@@ -119,10 +151,7 @@ document.getElementById("downloadBtn").addEventListener("click", () => {
     `;
   });
 
-  html += `
-    </body>
-    </html>
-  `;
+  html += `</body></html>`;
 
   win.document.write(html);
   win.document.close();
